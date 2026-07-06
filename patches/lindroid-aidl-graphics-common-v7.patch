@@ -1,0 +1,13 @@
+diff --git a/interfaces/composer/Android.bp b/interfaces/composer/Android.bp
+index dcf78e9..11375e4 100644
+--- a/interfaces/composer/Android.bp
++++ b/interfaces/composer/Android.bp
+@@ -3,7 +3,7 @@ aidl_interface {
+     system_ext_specific: true,
+     srcs: [ "vendor/lindroid/composer/*.aidl" ],
+     imports: [
+-        "android.hardware.graphics.common-V5",
++        "android.hardware.graphics.common-V7",
+     ],
+ 
+     unstable: true,

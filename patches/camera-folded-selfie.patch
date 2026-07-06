@@ -1,0 +1,57 @@
+diff --git a/core/res/res/values/config.xml b/core/res/res/values/config.xml
+index fbe4c3280e49..2c866495f22e 100644
+--- a/core/res/res/values/config.xml
++++ b/core/res/res/values/config.xml
+@@ -6596,6 +6596,13 @@
+         split screen. -->
+     <bool name="config_isWindowManagerCameraCompatTreatmentEnabled">false</bool>
+ 
++    <!-- When true, report the inner front camera as covered (DEVICE_STATE_FRONT_COVERED)
++         to the camera service while the device is folded, in addition to
++         DEVICE_STATE_FOLDED. Some foldable vendor HALs (e.g. Motorola razr's CamX)
++         require this to route the logical front camera to the outer/cover lens when
++         folded, and reject opening it otherwise. -->
++    <bool name="config_cameraFrontCoveredWhenFolded">false</bool>
++
+     <!-- Whether should use split screen aspect ratio for the activity when camera compat treatment
+         is enabled and activity is connected to the camera in fullscreen. -->
+     <bool name="config_isWindowManagerCameraCompatSplitScreenAspectRatioEnabled">false</bool>
+diff --git a/core/res/res/values/symbols.xml b/core/res/res/values/symbols.xml
+index c3ef357178cb..87f0c377f869 100644
+--- a/core/res/res/values/symbols.xml
++++ b/core/res/res/values/symbols.xml
+@@ -5029,6 +5029,7 @@
+ 
+   <java-symbol type="bool" name="config_isCompatFakeFocusEnabled" />
+   <java-symbol type="bool" name="config_isWindowManagerCameraCompatTreatmentEnabled" />
++  <java-symbol type="bool" name="config_cameraFrontCoveredWhenFolded" />
+   <java-symbol type="bool" name="config_isWindowManagerCameraCompatSplitScreenAspectRatioEnabled" />
+   <java-symbol type="bool" name="config_isCameraCompatSimulateRequestedOrientationTreatmentEnabled" />
+   <java-symbol type="bool" name="config_skipActivityRelaunchWhenDocking" />
+diff --git a/services/core/java/com/android/server/camera/CameraServiceProxy.java b/services/core/java/com/android/server/camera/CameraServiceProxy.java
+index 9073b53ea35a..2d9c549d9bbd 100644
+--- a/services/core/java/com/android/server/camera/CameraServiceProxy.java
++++ b/services/core/java/com/android/server/camera/CameraServiceProxy.java
+@@ -986,9 +986,20 @@ public class CameraServiceProxy extends SystemService
+ 
+         mFoldStateListener = new FoldStateListener(mContext, folded -> {
+             if (folded) {
+-                setDeviceStateFlags(ICameraService.DEVICE_STATE_FOLDED);
++                int deviceStateFlags = ICameraService.DEVICE_STATE_FOLDED;
++                // Some foldables (e.g. Motorola razr) need the inner front camera
++                // reported as covered when folded, so the vendor HAL routes the
++                // logical front camera to the outer/cover lens. Without this bit the
++                // Moto CamX HAL rejects opening the front camera folded with
++                // CamxResultEInvalidArg. Gated per-device via config overlay.
++                if (mContext.getResources().getBoolean(
++                        R.bool.config_cameraFrontCoveredWhenFolded)) {
++                    deviceStateFlags |= ICameraService.DEVICE_STATE_FRONT_COVERED;
++                }
++                setDeviceStateFlags(deviceStateFlags);
+             } else {
+-                clearDeviceStateFlags(ICameraService.DEVICE_STATE_FOLDED);
++                clearDeviceStateFlags(ICameraService.DEVICE_STATE_FOLDED
++                        | ICameraService.DEVICE_STATE_FRONT_COVERED);
+             }
+         });
+     }

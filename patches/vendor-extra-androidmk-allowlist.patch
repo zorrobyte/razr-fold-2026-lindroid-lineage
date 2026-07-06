@@ -1,0 +1,12 @@
+diff --git a/vendor/extra/build/androidmk/allowlist.txt b/vendor/extra/build/androidmk/allowlist.txt
+new file mode 100644
+index 0000000..e3021bf
+--- /dev/null
++++ b/vendor/extra/build/androidmk/allowlist.txt
+@@ -0,0 +1,6 @@
++external/libhybris/compat/ui/Android.mk
++external/libhybris/compat/input/Android.mk
++external/libhybris/compat/camera/Android.mk
++external/libhybris/compat/surface_flinger/Android.mk
++external/libhybris/compat/media/Android.mk
++external/libhybris/compat/hwc2/Android.mk

@@ -1,0 +1,9 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<manifest>
+  <remote name="lindroid" fetch="https://github.com/Linux-on-droid/" />
+
+  <project name="vendor_lindroid" path="vendor/lindroid" remote="lindroid" revision="lindroid-22.1" clone-depth="1" />
+  <project name="external_lxc" path="external/lxc" remote="lindroid" revision="lindroid-21" clone-depth="1" />
+  <project name="libhybris" path="external/libhybris" remote="lindroid" revision="lindroid-21" clone-depth="1" />
+  <project name="vendor_extra" path="vendor/extra" remote="lindroid" revision="lindroid-21" clone-depth="1" />
+</manifest>

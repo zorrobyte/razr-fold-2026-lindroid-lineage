@@ -1,0 +1,21 @@
+diff --git a/services/inputflinger/reader/EventHub.cpp b/services/inputflinger/reader/EventHub.cpp
+index c6054e7b80..966ea8b7f8 100644
+--- a/services/inputflinger/reader/EventHub.cpp
++++ b/services/inputflinger/reader/EventHub.cpp
+@@ -2459,6 +2459,16 @@ void EventHub::openDeviceLocked(const std::string& devicePath) {
+     // Obtain the associated device, if any.
+     device->associatedDevice = obtainAssociatedDeviceLocked(devicePath, device->configuration);
+ 
++    // Lindroid: allow disabling an input device via its .idc (device.disabled=1).
++    // The container/EVDI path registers virtual input devices whose events must not
++    // reach Android apps. Ported to Android 16 from Billy Laws' inputflinger change
++    // (gerrit.libremobileos.com/c/LMODroid/platform_frameworks_native/+/12936).
++    if (device->configuration &&
++        device->configuration->getBool("device.disabled").value_or(false)) {
++        ALOGV("Disabling device with id %d\n", deviceId);
++        device->disable();
++    }
++
+     // Figure out the kinds of events the device reports.
+     device->readDeviceBitMask(EVIOCGBIT(EV_KEY, 0), device->keyBitmask);
+     device->readDeviceBitMask(EVIOCGBIT(EV_ABS, 0), device->absBitmask);

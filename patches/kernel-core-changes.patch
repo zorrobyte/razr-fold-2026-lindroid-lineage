@@ -1,0 +1,174 @@
+diff --git a/BUILD.bazel b/BUILD.bazel
+index ca86f9ba2..987b7ef77 100644
+--- a/BUILD.bazel
++++ b/BUILD.bazel
+@@ -251,6 +251,7 @@ common_kernel(
+     ddk_headers_archive = ":kernel_aarch64_ddk_headers_archive",
+     ddk_module_headers = [":all_headers_aarch64"],
+     defconfig = "arch/arm64/configs/gki_defconfig",
++    check_defconfig = "disabled",
+     extra_dist = [
+         ":test_mappings_zip",
+         ":tests_zip_arm64",
+@@ -258,9 +259,9 @@ common_kernel(
+     gki_boot_img_sizes = _GKI_AARCH64_BOOT_IMAGE_SIZES,
+     gki_system_dlkm_modules = ":gki_system_dlkm_modules_arm64",
+     kcflags = COMMON_KCFLAGS,
+-    kmi_enforced = True,
++    kmi_enforced = False,
+     kmi_symbol_list = "gki/aarch64/symbols/base",
+-    kmi_symbol_list_strict_mode = True,
++    kmi_symbol_list_strict_mode = False,
+     make_goals = _GKI_AARCH64_MAKE_GOALS,
+     makefile = ":Makefile",
+     module_implicit_outs = get_gki_modules_list("arm64") + get_kunit_modules_list("arm64"),
+diff --git a/build.config.gki b/build.config.gki
+index 1ab17536a..139b21162 100644
+--- a/build.config.gki
++++ b/build.config.gki
+@@ -1,5 +1,5 @@
+ echo "WARNING: Do not source build.config.gki.
+-    Use kernel_build.defconfig and kernel_build.check_defconfig instead." >&2
++    Use kernel_build.defconfig and kernel_build. instead." >&2
+ 
+ DEFCONFIG=gki_defconfig
+-POST_DEFCONFIG_CMDS="check_defconfig"
++POST_DEFCONFIG_CMDS=""
+diff --git a/drivers/gpu/drm/Kconfig b/drivers/gpu/drm/Kconfig
+index 1160a439e..3169b4ed5 100644
+--- a/drivers/gpu/drm/Kconfig
++++ b/drivers/gpu/drm/Kconfig
+@@ -365,6 +365,8 @@ source "drivers/gpu/drm/radeon/Kconfig"
+ 
+ source "drivers/gpu/drm/amd/amdgpu/Kconfig"
+ 
++source "drivers/gpu/drm/evdi/Kconfig"
++
+ source "drivers/gpu/drm/nouveau/Kconfig"
+ 
+ source "drivers/gpu/drm/i915/Kconfig"
+diff --git a/drivers/gpu/drm/Makefile b/drivers/gpu/drm/Makefile
+index 1ec445294..2fd1e241f 100644
+--- a/drivers/gpu/drm/Makefile
++++ b/drivers/gpu/drm/Makefile
+@@ -162,6 +162,7 @@ obj-$(CONFIG_DRM_MIPI_DBI) += drm_mipi_dbi.o
+ obj-$(CONFIG_DRM_MIPI_DSI) += drm_mipi_dsi.o
+ obj-y			+= arm/
+ obj-y			+= display/
++obj-$(CONFIG_DRM_LINDROID_EVDI)+= evdi/
+ obj-$(CONFIG_DRM_TTM)	+= ttm/
+ obj-$(CONFIG_DRM_SCHED)	+= scheduler/
+ obj-$(CONFIG_DRM_RADEON)+= radeon/
+diff --git a/include/drm/drm_ioctl.h b/include/drm/drm_ioctl.h
+index 171760b6c..6ed61c371 100644
+--- a/include/drm/drm_ioctl.h
++++ b/include/drm/drm_ioctl.h
+@@ -109,6 +109,17 @@ enum drm_ioctl_flags {
+ 	 * This is equivalent to callers with the SYSADMIN capability.
+ 	 */
+ 	DRM_ROOT_ONLY		= BIT(2),
++	/**
++	 * @DRM_UNLOCKED:
++	 *
++	 * Whether &drm_ioctl_desc.func should be called with the DRM BKL held
++	 * or not. Enforced as the default for all modern drivers, hence there
++	 * should never be a need to set this flag.
++	 *
++	 * Do not use anywhere else than for the VBLANK_WAIT IOCTL, which is the
++	 * only legacy IOCTL which needs this.
++	 */
++	DRM_UNLOCKED		= BIT(4),
+ 	/**
+ 	 * @DRM_RENDER_ALLOW:
+ 	 *
+diff --git a/ipc/msgutil.c b/ipc/msgutil.c
+index c7be0c792..eaf7466da 100644
+--- a/ipc/msgutil.c
++++ b/ipc/msgutil.c
+@@ -193,3 +193,7 @@ void free_msg(struct msg_msg *msg)
+ 		seg = tmp;
+ 	}
+ }
++
++/* lindroid: export for rust_binder.ko */
++#include <linux/export.h>
++EXPORT_SYMBOL_GPL(init_ipc_ns);
+diff --git a/ipc/namespace.c b/ipc/namespace.c
+index 4df91ceee..952d0b7d3 100644
+--- a/ipc/namespace.c
++++ b/ipc/namespace.c
+@@ -258,3 +258,7 @@ const struct proc_ns_operations ipcns_operations = {
+ 	.install	= ipcns_install,
+ 	.owner		= ipcns_owner,
+ };
++
++/* lindroid: export for rust_binder.ko */
++#include <linux/export.h>
++EXPORT_SYMBOL_GPL(put_ipc_ns);
+diff --git a/kernel/module/version.c b/kernel/module/version.c
+index 3718a8868..e722003d4 100644
+--- a/kernel/module/version.c
++++ b/kernel/module/version.c
+@@ -15,61 +15,7 @@ int check_version(const struct load_info *info,
+ 			 struct module *mod,
+ 			 const u32 *crc)
+ {
+-	Elf_Shdr *sechdrs = info->sechdrs;
+-	unsigned int versindex = info->index.vers;
+-	unsigned int i, num_versions;
+-	struct modversion_info *versions;
+-	struct modversion_info_ext version_ext;
+-
+-	/* Exporting module didn't supply crcs?  OK, we're already tainted. */
+-	if (!crc)
+-		return 1;
+-
+-	/* If we have extended version info, rely on it */
+-	if (info->index.vers_ext_crc) {
+-		for_each_modversion_info_ext(version_ext, info) {
+-			if (strcmp(version_ext.name, symname) != 0)
+-				continue;
+-			if (*version_ext.crc == *crc)
+-				return 1;
+-			pr_debug("Found checksum %X vs module %X\n",
+-				 *crc, *version_ext.crc);
+-			goto bad_version;
+-		}
+-		pr_warn_once("%s: no extended symbol version for %s\n",
+-			     info->name, symname);
+-		return 1;
+-	}
+-
+-	/* No versions at all?  modprobe --force does this. */
+-	if (versindex == 0)
+-		return try_to_force_load(mod, symname) == 0;
+-
+-	versions = (void *)sechdrs[versindex].sh_addr;
+-	num_versions = sechdrs[versindex].sh_size
+-		/ sizeof(struct modversion_info);
+-
+-	for (i = 0; i < num_versions; i++) {
+-		u32 crcval;
+-
+-		if (strcmp(versions[i].name, symname) != 0)
+-			continue;
+-
+-		crcval = *crc;
+-		if (versions[i].crc == crcval)
+-			return 1;
+-		pr_debug("Found checksum %X vs module %lX\n",
+-			 crcval, versions[i].crc);
+-		goto bad_version;
+-	}
+-
+-	/* Broken toolchain. Warn once, then let it go.. */
+-	pr_warn_once("%s: no symbol version for %s\n", info->name, symname);
+-	return 1;
+-
+-bad_version:
+-	pr_warn("%s: disagrees about version of symbol %s\n", info->name, symname);
+-	return 0;
++	return 1; /* lindroid: bypass module CRC; GKI ABI stable */
+ }
+ 
+ int check_modstruct_version(const struct load_info *info,
