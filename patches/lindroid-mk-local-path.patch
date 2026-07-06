@@ -1,0 +1,16 @@
+diff --git a/lindroid.mk b/lindroid.mk
+--- a/lindroid.mk
++++ b/lindroid.mk
+@@ -1,4 +1,10 @@
+-LOCAL_PATH := $(call my-dir)
++# lindroid: $(call my-dir) resolves to empty string when this file is reached via product
++# inheritance (device.mk's $(call inherit-product, vendor/lindroid/lindroid.mk)) rather than
++# being included directly off the top-level Android.mk walk -- my-dir's
++# $(lastword $(MAKEFILE_LIST)) trick doesn't see this file in that path. An empty LOCAL_PATH
++# made soong_filesystem_creator reject every relative reference under it -- concretely,
++# ".../configs/disabled.idc: outside source root" -- which aborted the whole system-image
++# build. Hardcoding the path (this makefile's location is fixed by the repo manifest anyway)
++# fixes it.
++LOCAL_PATH := vendor/lindroid
+
+ include $(CLEAR_VARS)

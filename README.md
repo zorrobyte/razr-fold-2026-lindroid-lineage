@@ -36,9 +36,10 @@ from the working checkouts.
 | Cover-panel 165 Hz refresh | ✅ fixed, see [docs/fixes.md](docs/fixes.md) |
 | Folded selfie camera | ✅ fixed, see [docs/fixes.md](docs/fixes.md) |
 | Lindroid input isolation (EventHub `.idc`) | ✅ ported, see [docs/fixes.md](docs/fixes.md) |
-| Lindroid userspace (vendor/lindroid, libhybris, lxc) on A16 | 🟡 in progress, see [docs/lindroid-userspace.md](docs/lindroid-userspace.md) |
+| Lindroid userspace (vendor/lindroid, libhybris, lxc) on A16 | ✅ forward-ported, built, flashed — see [docs/lindroid-userspace.md](docs/lindroid-userspace.md) |
 | Lindroid kernel (SYSVIPC/namespaces/EVDI) | ✅ **SOLVED**, boot-verified — see [docs/lindroid-kernel.md](docs/lindroid-kernel.md) |
-| GPU-accelerated Lindroid desktop | 🔴 not yet reached; kernel is no longer the blocker — prior art summarized in [docs/gpu-accel.md](docs/gpu-accel.md) |
+| Lindroid container boots, first display output on physical screen | ✅ achieved (Debian/KDE container, EVDI → composer → LindroidUI) — see [docs/display-bringup.md](docs/display-bringup.md) |
+| GPU-accelerated Lindroid desktop | 🔴 blocked on an EVDI `open()` EINVAL in the currently-flashed kernel release (fix identified, kernel rebuild in progress) — see [docs/display-bringup.md](docs/display-bringup.md) and [docs/gpu-accel.md](docs/gpu-accel.md) |
 
 ## Companion repos
 
@@ -85,12 +86,16 @@ docs/
   lineageos-port.md      milestone-1 strategy, flash recipe, hardware survey
   fixes.md               refresh rate / folded camera / inputflinger fixes, with patches
   lindroid-kernel.md      SOLVED: the boot-verified release, the two ABI tricks, reproduce-from-source
-  lindroid-userspace.md   vendor/lindroid + libhybris + lxc forward-port to A16
+  lindroid-userspace.md   vendor/lindroid + libhybris + lxc forward-port to A16, build + boot
+  display-bringup.md      first display output, container storage fix, the EVDI EINVAL desktop crux
   gpu-accel.md            summary of the GPU-acceleration investigation (Turnip vs libhybris)
 patches/
   camera-folded-selfie.patch          frameworks/base — DEVICE_STATE_FRONT_COVERED gating
   inputflinger-idc-disable.patch      frameworks/native — EventHub .idc device.disabled
   lindroid-aidl-graphics-common-v7.patch   vendor/lindroid — AIDL version bump for A16
+  lindroid-composer3-v4.patch         external/libhybris — composer3 AIDL version bump for A16
+  lindroid-mk-local-path.patch        vendor/lindroid — LOCAL_PATH fix for product-inherited lindroid.mk
+  perspectived-sepolicy-r-dir-fix.patch    vendor/lindroid sepolicy — neverallow-safe perspectived rule
   vendor-extra-androidmk-allowlist.patch   vendor/extra — Android.mk denylist allowlist hook
   kernel/version.c.patch              kernel: force-load stock modules past module_layout CRC shift
   kernel/sched.h-kabi.patch           kernel: relocate sysvsem/sysvshm into ANDROID_KABI_RESERVE

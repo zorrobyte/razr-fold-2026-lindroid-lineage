@@ -1,0 +1,12 @@
+diff --git a/sepolicy/perspectived.te b/sepolicy/perspectived.te
+--- a/sepolicy/perspectived.te
++++ b/sepolicy/perspectived.te
+@@
+-allow perspectived init:dir w_dir_perms;
++# lindroid: w_dir_perms here trips the platform neverallow
++#   neverallow domain domain:dir { write add_name remove_name };
++# which is a *compile-time* check on the sepolicy build (unlike a normal denial, permissive
++# mode does not save you here -- the build fails before anything runs). perspectived only
++# needs to read init's dir (e.g. to locate init's well-known sockets), never to write into
++# it, so the fix is the weaker permission macro, not an exception to the neverallow.
++allow perspectived init:dir r_dir_perms;

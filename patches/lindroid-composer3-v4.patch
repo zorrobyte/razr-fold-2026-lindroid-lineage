@@ -1,0 +1,6 @@
+diff --git a/compat/hwc2/Android.mk b/compat/hwc2/Android.mk
+--- a/compat/hwc2/Android.mk
++++ b/compat/hwc2/Android.mk
+@@
+-LOCAL_SHARED_LIBRARIES += android.hardware.graphics.composer3-V1-ndk
++LOCAL_SHARED_LIBRARIES += android.hardware.graphics.composer3-V4-ndk

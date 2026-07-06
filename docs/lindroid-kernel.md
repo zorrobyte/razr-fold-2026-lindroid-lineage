@@ -217,6 +217,16 @@ future container-config addition: find the struct it reads, and relocate the new
   black screen). See `docs/LINDROID.md` in the kernel-build repo for the full compat-patch
   writeup.
 
+  > **Correction (userspace bring-up session):** this describes the EVDI driver *source* in the
+  > kernel-build tree accurately, but the specific release documented above (tag
+  > `lindroid-w3wb36.36-48-5`, commit `7fa8018`) was built from a tree state that **predates**
+  > `.fop_flags = FOP_UNSIGNED_OFFSET` landing. The `EINVAL`-on-`open()` bug this fix addresses
+  > was reproduced on real hardware against that exact flashed image (see
+  > [display-bringup.md](display-bringup.md)). The kernel bring-up itself (namespaces, EVDI
+  > module loading, `/dev/dri` node creation — everything "On-device boot verification" above
+  > checks) is still correctly solved; a rebuild from the current source plus reflash is needed
+  > to actually pick up this specific compat fix, and is in progress.
+
 ### Reproducing the exact stock vermagic string
 
 Even with Trick 1 force-loading past CRC mismatches, module loading has a **separate**, earlier
