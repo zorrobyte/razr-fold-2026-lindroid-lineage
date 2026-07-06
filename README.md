@@ -37,8 +37,8 @@ from the working checkouts.
 | Folded selfie camera | ✅ fixed, see [docs/fixes.md](docs/fixes.md) |
 | Lindroid input isolation (EventHub `.idc`) | ✅ ported, see [docs/fixes.md](docs/fixes.md) |
 | Lindroid userspace (vendor/lindroid, libhybris, lxc) on A16 | 🟡 in progress, see [docs/lindroid-userspace.md](docs/lindroid-userspace.md) |
-| Lindroid kernel (SYSVIPC/namespaces/EVDI) | 🔴 **blocked** — builds, boots to init, then panics. See [docs/lindroid-kernel.md](docs/lindroid-kernel.md) |
-| GPU-accelerated Lindroid desktop | 🔴 not reached yet (blocked behind the kernel issue); prior art summarized in [docs/gpu-accel.md](docs/gpu-accel.md) |
+| Lindroid kernel (SYSVIPC/namespaces/EVDI) | ✅ **SOLVED**, boot-verified — see [docs/lindroid-kernel.md](docs/lindroid-kernel.md) |
+| GPU-accelerated Lindroid desktop | 🔴 not yet reached; kernel is no longer the blocker — prior art summarized in [docs/gpu-accel.md](docs/gpu-accel.md) |
 
 ## Companion repos
 
@@ -66,9 +66,10 @@ This repo is the LineageOS-based successor, which changes the leverage available
   [docs/fixes.md](docs/fixes.md).
 - **A rebuildable kernel instead of a frozen prebuilt.** The stock effort reused a prebuilt
   Lindroid kernel as-is. Here the kernel is built from the same tree as the (from-source, tag-
-  pinned) stock-equivalent kernel, so the Lindroid deltas (namespaces, EVDI, SYSVIPC) can be
-  iterated and diffed against a known-good baseline — which is exactly how this session
-  root-caused the current boot panic (see [docs/lindroid-kernel.md](docs/lindroid-kernel.md)).
+  pinned) stock-equivalent kernel, so the Lindroid deltas (namespaces, EVDI, SYSVIPC) could be
+  iterated and diffed against a known-good baseline — which is exactly how an early boot panic
+  in this effort was root-caused and then fixed for good (see
+  [docs/lindroid-kernel.md](docs/lindroid-kernel.md)).
 - **Debuggability.** Root, clean coredumps, and a patchable `WindowManager`/`CameraServiceProxy`
   are available by default. The stock effort's `native-display.md` diagnosis (libhybris TLS
   patcher vs. Android-16 bionic, then the kwin GBM/EGL surface-creation crux) was hard-won under
@@ -83,7 +84,7 @@ This repo is the LineageOS-based successor, which changes the leverage available
 docs/
   lineageos-port.md      milestone-1 strategy, flash recipe, hardware survey
   fixes.md               refresh rate / folded camera / inputflinger fixes, with patches
-  lindroid-kernel.md      the kernel reuse, SYSVIPC fix, boot panic, diagnosis, next steps
+  lindroid-kernel.md      SOLVED: the boot-verified release, the two ABI tricks, reproduce-from-source
   lindroid-userspace.md   vendor/lindroid + libhybris + lxc forward-port to A16
   gpu-accel.md            summary of the GPU-acceleration investigation (Turnip vs libhybris)
 patches/
@@ -91,8 +92,10 @@ patches/
   inputflinger-idc-disable.patch      frameworks/native — EventHub .idc device.disabled
   lindroid-aidl-graphics-common-v7.patch   vendor/lindroid — AIDL version bump for A16
   vendor-extra-androidmk-allowlist.patch   vendor/extra — Android.mk denylist allowlist hook
-  kernel-core-changes.patch           kernel: EVDI Kconfig/Makefile, ipc exports, MODVERSIONS bypass
-  kernel-gki_defconfig.patch          kernel: full gki_defconfig diff (see docs/lindroid-kernel.md)
+  kernel/version.c.patch              kernel: force-load stock modules past module_layout CRC shift
+  kernel/sched.h-kabi.patch           kernel: relocate sysvsem/sysvshm into ANDROID_KABI_RESERVE
+  kernel/ipc-exports.patch            kernel: EXPORT_SYMBOL(put_ipc_ns)/EXPORT_SYMBOL(init_ipc_ns)
+  kernel/lindroid_gki.fragment        kernel: base-kernel defconfig fragment (namespaces + EVDI)
 .repo-local-manifest/
   lindroid.xml            the repo local_manifest that pulls in vendor/lindroid + friends
 ```

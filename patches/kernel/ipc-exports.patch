@@ -1,0 +1,18 @@
+diff --git a/ipc/msgutil.c b/ipc/msgutil.c
+index c7be0c792..bddc1595f 100644
+--- a/ipc/msgutil.c
++++ b/ipc/msgutil.c
+@@ -193,3 +193,4 @@ void free_msg(struct msg_msg *msg)
+ 		seg = tmp;
+ 	}
+ }
++EXPORT_SYMBOL(init_ipc_ns);
+diff --git a/ipc/namespace.c b/ipc/namespace.c
+index 4df91ceee..f50b84594 100644
+--- a/ipc/namespace.c
++++ b/ipc/namespace.c
+@@ -258,3 +258,4 @@ const struct proc_ns_operations ipcns_operations = {
+ 	.install	= ipcns_install,
+ 	.owner		= ipcns_owner,
+ };
++EXPORT_SYMBOL(put_ipc_ns);
