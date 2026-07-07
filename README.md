@@ -52,8 +52,13 @@ from the working checkouts.
   `docs/native-turnip.md` are the deepest existing writeup of the GPU-acceleration problem and
   are referenced from this repo rather than duplicated.
 - **[libhybris (fork)](https://github.com/zorrobyte/libhybris/tree/blanc-a16)**
-  (branch `blanc-a16`, fork of `Linux-on-droid/libhybris`) — A16 forward-port: the
-  `pthread_cond_clockwait` bionic hook and the hwc2 composer3-V4 / HdrCapabilities fixes.
+  (branch `blanc-a16`, rebased onto upstream `Linux-on-droid/libhybris`'s `lindroid-drm` branch —
+  the branch the device actually runs, not `lindroid-21`) — 3 device-proven fixes on top: the
+  `pthread_cond_clockwait` bionic hook, C++ weak-undef vtable resolution + a real
+  `__cxa_pure_virtual` in the q-linker hooks, and a null-guard on `ComposerCallbackImpl`
+  callbacks in `compat/apphwc`. (The earlier composer3-V4 `compat/hwc2` change was dropped —
+  it forward-ported the unused legacy `compat/hwc2` / `libhwc2_compat_layer_org` layer; the
+  device uses `compat/apphwc`, and `lindroid-drm` already has its own `compat/hwc2`.)
 - **[vendor_lindroid (fork)](https://github.com/zorrobyte/vendor_lindroid/tree/blanc-a16)**
   (branch `blanc-a16`, fork of `Linux-on-droid/vendor_lindroid`) — A16 forward-port:
   `lindroid.mk` LOCAL_PATH, the perspectived sepolicy `r_dir_perms` neverallow fix, and
