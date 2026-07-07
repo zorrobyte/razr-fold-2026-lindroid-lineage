@@ -184,3 +184,25 @@ Forward-port, build wiring, and first boot are done. Remaining, in rough priorit
   domains need real policy before flipping back to enforcing.
 - **GPU-accelerated desktop** — blocked on an EVDI kernel bug independent of anything in this
   doc; see [display-bringup.md](display-bringup.md) and [gpu-accel.md](gpu-accel.md).
+
+
+## Note: perspectived is a coredomain mislabeled in vendor sepolicy
+
+`perspectived` (the Lindroid container/display supervisor) is declared as a
+`coredomain` but its type/`file_contexts` live in **vendor** sepolicy
+(`vendor/lindroid/sepolicy`). A coredomain must be defined in
+`system`/`system_ext` (plat/plat_pub) sepolicy, not vendor. Because of the
+split, init cannot resolve the process context at autostart time and the
+service fails to launch with:
+
+```
+init: Could not get process context for service perspectived ... (No such file or directory)
+```
+
+**Fix direction (not yet applied):** move the `perspectived` type definition,
+`.te`, and `file_contexts` entry out of `vendor/lindroid/sepolicy` and into
+`system_ext` (or plat) sepolicy so the coredomain label is visible to init's
+core policy. Until then perspectived is started manually / via a shim rather
+than init-autostarted. Tracked here so it isn't lost; the `r_dir_perms`
+neverallow fix (see `patches/perspectived-sepolicy-r-dir-fix.patch`) is
+independent of this labeling problem.

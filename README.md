@@ -51,6 +51,13 @@ from the working checkouts.
   earlier **stock-Android** Lindroid effort (Magisk-based). Its `docs/native-display.md` and
   `docs/native-turnip.md` are the deepest existing writeup of the GPU-acceleration problem and
   are referenced from this repo rather than duplicated.
+- **[libhybris (fork)](https://github.com/zorrobyte/libhybris/tree/blanc-a16)**
+  (branch `blanc-a16`, fork of `Linux-on-droid/libhybris`) — A16 forward-port: the
+  `pthread_cond_clockwait` bionic hook and the hwc2 composer3-V4 / HdrCapabilities fixes.
+- **[vendor_lindroid (fork)](https://github.com/zorrobyte/vendor_lindroid/tree/blanc-a16)**
+  (branch `blanc-a16`, fork of `Linux-on-droid/vendor_lindroid`) — A16 forward-port:
+  `lindroid.mk` LOCAL_PATH, the perspectived sepolicy `r_dir_perms` neverallow fix, and
+  the graphics.common V5->V7 AIDL bump.
 
 ## How this differs from the stock effort
 
@@ -92,6 +99,8 @@ docs/
 patches/
   camera-folded-selfie.patch          frameworks/base — DEVICE_STATE_FRONT_COVERED gating
   inputflinger-idc-disable.patch      frameworks/native — EventHub .idc device.disabled
+  frameworks-WiredAccessoryManager-evdi-npe.patch  frameworks/base — null-guard EVDI
+                                      hotplug uevent (no NAME/SWITCH_NAME) -> onUEvent NPE
   lindroid-aidl-graphics-common-v7.patch   vendor/lindroid — AIDL version bump for A16
   lindroid-composer3-v4.patch         external/libhybris — composer3 AIDL version bump for A16
   lindroid-mk-local-path.patch        vendor/lindroid — LOCAL_PATH fix for product-inherited lindroid.mk

@@ -1,0 +1,30 @@
+# frameworks/base - WiredAccessoryManager EVDI hotplug NPE null-guard
+#
+# EVDI / DRM virtual-display hotplug uevents (emitted when a Lindroid
+# container brings up its display) carry neither NAME nor SWITCH_NAME.
+# WiredAccessoryManager.onUEvent() then dereferences a null `name`, throwing
+# in system_server and soft-rebooting the device every time a container
+# starts. Guard: if name == null, ignore the uevent.
+#
+# Applies to: frameworks/base (lineage-23.2 / Android 16), motorola blanc.
+# This is the source-level equivalent of the stock effort's services.jar
+# smali null-guard (see razr-fold-2026-lindroid docs/services-jar.md).
+#
+diff --git a/services/core/java/com/android/server/WiredAccessoryManager.java b/services/core/java/com/android/server/WiredAccessoryManager.java
+index 6a808b813bef..ce07372b5402 100644
+--- a/services/core/java/com/android/server/WiredAccessoryManager.java
++++ b/services/core/java/com/android/server/WiredAccessoryManager.java
+@@ -558,6 +558,13 @@ final class WiredAccessoryManager implements WiredAccessoryCallbacks {
+                 name = event.get("SWITCH_NAME");
+             }
+ 
++            if (name == null) {
++                // Lindroid: EVDI/DRM virtual-display hotplug uevents carry neither
++                // NAME nor SWITCH_NAME. Ignore them instead of NPE'ing system_server
++                // (which soft-reboots the device when a Lindroid container starts).
++                return;
++            }
++
+             try {
+                 if (name.startsWith(NAME_DP_AUDIO)) {
+                     String stateStr = event.get("STATE");
